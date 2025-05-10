@@ -65,3 +65,51 @@ bool ServoController::write(uint8_t pin, uint8_t angle) {
   return writeMicroseconds(pin, pulseWidth);
 }
 
+bool ServoController::writeMicroseconds(uint8_t pin, uint16_t us) {
+  if (us < MIN_PULSE_WIDTH || us > MAX_PULSE_WIDTH)
+    return false;
+
+  for (uint8_t i = 0; i < _servoCount; i++) {
+    if (_pins[i] == pin) {
+      _pulseWidths[i] = us;
+      return true;
+    }
+  }
+  return false;
+}
+
+void ServoController::setAllHigh() {
+  for (uint8_t i = 0; i < _servoCount; i++) {
+    digitalWrite(_pins[i], HIGH);
+  }
+}
+
+bool ServoController::setPinLow(uint8_t pin) {
+  if(pin < 0 || pin > MAX_SERVOS)
+    return false;
+
+  for (uint8_t i = 0; i < _servoCount; i++) {
+    if (_pins[i] == pin) {
+      digitalWrite(pin, LOW);
+      return true;
+    }
+  }
+  return false;
+}
+
+// Timer1 interrupt service routine for starting the pulse
+ISR(TIMER1_COMPA_vect) {
+  servoControler.setAllHigh();
+  
+}
+
+// Timer1 interrupt service routine for ending the pulse
+ISR(TIMER1_COMPB_vect) {
+  if (servoControler._currentServo < servoControler._servoCount) {
+    digitalWrite(servoControler._pins[servoControler._currentServo], LOW);
+    servoControler._currentServo++;
+  } else {
+    servoControler._currentServo = 0;
+  }
+}
+

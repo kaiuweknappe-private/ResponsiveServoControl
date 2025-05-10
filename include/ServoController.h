@@ -10,7 +10,8 @@ class ServoController{
     bool detach(uint8_t pin);
     bool write(uint8_t pin, uint8_t angle);
     bool writeMicroseconds(uint8_t pin, uint16_t us);
-    
+    void setAllHigh();
+    bool setPinLow(uint8_t pin);
     static const uint8_t MAX_SERVOS = 8;
 
     static const uint16_t MIN_PULSE_WIDTH = 500; // 0.5 ms
