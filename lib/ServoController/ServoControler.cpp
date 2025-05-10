@@ -1,11 +1,11 @@
 
-#include "ServoControler.h"
+#include "ServoController.h"
 #include <Arduino.h>
 
 // Define global instance of ServoControler
-ServoControler servoControler;
+ServoController servoControler;
 
-ServoControler::ServoControler() : _servoCount(0), _currentServo(0) {
+ServoController::ServoController() : _servoCount(0), _currentServo(0) {
 
   //Configure timer1:
   cli(); // disable interrupts while setting up
@@ -30,7 +30,7 @@ ServoControler::ServoControler() : _servoCount(0), _currentServo(0) {
   sei(); // enable global interrupts
 }
 
-bool ServoControler::attach(uint8_t pin) {
+bool ServoController::attach(uint8_t pin) {
   if (_servoCount >= MAX_SERVOS)
     return false;
 
@@ -42,7 +42,7 @@ bool ServoControler::attach(uint8_t pin) {
   return true;
 }
 
-bool ServoControler::detach(uint8_t pin) {
+bool ServoController::detach(uint8_t pin) {
   for (uint8_t i = 0; i < _servoCount; i++) {
     if (_pins[i] == pin) {
       // Shift servos down
@@ -57,7 +57,7 @@ bool ServoControler::detach(uint8_t pin) {
   return false;
 }
 
-bool ServoControler::write(uint8_t pin, uint8_t angle) {
+bool ServoController::write(uint8_t pin, uint8_t angle) {
   if (angle < 0 || angle > 180)
     return false;
 

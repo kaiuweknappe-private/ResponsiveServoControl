@@ -1,9 +1,9 @@
 #include <Arduino.h>
-#include <ServoControler.h>
+#include <ServoController.h>
 
 void setup() {
-  servoControler.attach(9);
-  
+  servoController.attach(9);
+
 }
 
 void loop() {

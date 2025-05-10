@@ -1,11 +1,11 @@
 
-#ifndef ServoControler_h
-#define ServoControler_h
+#ifndef ServoController_h
+#define ServoController_h
 
 
-class ServoControler{
+class ServoController{
     public:
-    ServoControler();
+    ServoController();
     bool attach(uint8_t pin);
     bool detach(uint8_t pin);
     bool write(uint8_t pin, uint8_t angle);
@@ -27,6 +27,6 @@ class ServoControler{
 };
 
 // Declare global instance of ServoControler
-extern ServoControler servoControler;
+extern ServoController servoController;
 
-#endif // ServoControler_h
+#endif // ServoControllr_h
