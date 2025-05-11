@@ -2,10 +2,10 @@
 #include "ServoController.h"
 #include <Arduino.h>
 
-// Define global instance of ServoControler
-ServoController servoControler;
+// Define global instance of ServoController
+ServoController servoController;
 
-ServoController::ServoController() : _servoCount(0), _currentServo(0) {
+ServoController::ServoController() : servoCount(0), currentIndex(0) {
 
   //Configure timer1:
   cli(); // disable interrupts while setting up
@@ -30,27 +30,46 @@ ServoController::ServoController() : _servoCount(0), _currentServo(0) {
   sei(); // enable global interrupts
 }
 
+void ServoController::reorder() {
+  for (uint8_t i = 0; i < servoCount; i++) {
+    order[i] = i;
+  }
+
+  for (uint8_t i = 0; i < servoCount - 1; i++) {
+    for (uint8_t j = 0; j < servoCount - i - 1; j++) {
+      if (servos[order[j]].pulseWidth > servos[order[j + 1]].pulseWidth) {
+        uint8_t temp = order[j];
+        order[j] = order[j + 1];
+        order[j + 1] = temp;
+      }
+    }
+  }
+}
+
 bool ServoController::attach(uint8_t pin) {
-  if (_servoCount >= MAX_SERVOS)
+  if (servoCount >= MAX_SERVOS)
     return false;
 
-  _pins[_servoCount] = pin;
+  servos[servoCount] = {pin, DEFAULT_PULSE_WIDTH};
   pinMode(pin, OUTPUT);
   digitalWrite(pin, LOW);
-  _pulseWidths[_servoCount] = DEFAULT_PULSE_WIDTH; 
-  _servoCount++;
+
+  reorder();
+
+  servoCount++;
   return true;
 }
 
 bool ServoController::detach(uint8_t pin) {
-  for (uint8_t i = 0; i < _servoCount; i++) {
-    if (_pins[i] == pin) {
+  for (uint8_t i = 0; i < servoCount; i++) {
+    if (servos[i].pin == pin) {
       // Shift servos down
-      for (uint8_t j = i; j < _servoCount - 1; j++) {
-        _pins[j] = _pins[j + 1];
-        _pulseWidths[j] = _pulseWidths[j + 1];
+      for (uint8_t j = i; j < servoCount - 1; j++) {
+        servos[j].pin = servos[j + 1].pin;
+        servos[j].pulseWidth = servos[j + 1].pulseWidth;
       }
-      _servoCount--;
+      servoCount--;
+      reorder();
       return true;
     }
   }
@@ -69,9 +88,10 @@ bool ServoController::writeMicroseconds(uint8_t pin, uint16_t us) {
   if (us < MIN_PULSE_WIDTH || us > MAX_PULSE_WIDTH)
     return false;
 
-  for (uint8_t i = 0; i < _servoCount; i++) {
-    if (_pins[i] == pin) {
-      _pulseWidths[i] = us;
+  for (uint8_t i = 0; i < servoCount; i++) {
+    if (servos[i].pin == pin) {
+      servos[i].pulseWidth = us;
+      reorder();
       return true;
     }
   }
@@ -79,37 +99,34 @@ bool ServoController::writeMicroseconds(uint8_t pin, uint16_t us) {
 }
 
 void ServoController::setAllHigh() {
-  for (uint8_t i = 0; i < _servoCount; i++) {
-    digitalWrite(_pins[i], HIGH);
+  for (uint8_t i = 0; i < servoCount; i++) {
+    digitalWrite(servos[i].pin, HIGH);
   }
 }
 
-bool ServoController::setPinLow(uint8_t pin) {
-  if(pin < 0 || pin > MAX_SERVOS)
-    return false;
-
-  for (uint8_t i = 0; i < _servoCount; i++) {
-    if (_pins[i] == pin) {
-      digitalWrite(pin, LOW);
-      return true;
-    }
-  }
-  return false;
+void ServoController::setCurrentPinLow() {
+  digitalWrite(servos[order[currentIndex]].pin, LOW);
 }
 
 // Timer1 interrupt service routine for starting the pulse
 ISR(TIMER1_COMPA_vect) {
-  servoControler.setAllHigh();
+  if (servoController.servoCount <= 0)
+    return;
+
+  servoController.setAllHigh();
   
+  servoController.currentIndex = 0;
+  OCR1B = TCNT1 + (servoController.servos[servoController.order[0]].pulseWidth * 2);
 }
 
 // Timer1 interrupt service routine for ending the pulse
 ISR(TIMER1_COMPB_vect) {
-  if (servoControler._currentServo < servoControler._servoCount) {
-    digitalWrite(servoControler._pins[servoControler._currentServo], LOW);
-    servoControler._currentServo++;
-  } else {
-    servoControler._currentServo = 0;
-  }
+  servoController.setCurrentPinLow();
+  servoController.currentIndex++;
+
+  while (servoController.currentIndex < servoController.servoCount && )
+
+  //set ocr1b for next pin
+  uint16_t timeDiff = servos[_order[_currentIndex + 1]].pulseWidth - servos[_order[_currentIndex]].pulseWidth;
 }
 
