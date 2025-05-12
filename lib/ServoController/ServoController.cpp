@@ -6,8 +6,8 @@
 ServoController servoController;
 
 ServoController::ServoController() : servoCount(0), currentIndex(0) {
-
   //Configure timer1:
+
   cli(); // disable interrupts while setting up
 
   // Reset Timer1 control registers
@@ -23,11 +23,15 @@ ServoController::ServoController() : servoCount(0), currentIndex(0) {
   // OCR1A = 40000 ticks → 20 ms
   OCR1A = 40000;
 
-  // Enable COMPA and COMPB interrupts
-  TIMSK1 |= (1 << OCIE1A); // start pulse
-  TIMSK1 |= (1 << OCIE1B); // end pulse
-
   sei(); // enable global interrupts
+}
+
+void ServoController::start() {
+  TIMSK1 |= (1 << OCIE1A); // start pulse
+}
+
+void ServoController::stop() {
+  TIMSK1 &= ~(1 << OCIE1A); // stop pulse
 }
 
 void ServoController::reorder() {
@@ -46,11 +50,11 @@ void ServoController::reorder() {
   }
 }
 
-bool ServoController::attach(uint8_t pin) {
+bool ServoController::attach(uint8_t pin, uint16_t pulseWidth = 1500) {
   if (servoCount >= MAX_SERVOS)
     return false;
 
-  servos[servoCount] = {pin, DEFAULT_PULSE_WIDTH};
+  servos[servoCount] = {pin, pulseWidth};
   pinMode(pin, OUTPUT);
   digitalWrite(pin, LOW);
 
@@ -108,6 +112,22 @@ void ServoController::setCurrentPinLow() {
   digitalWrite(servos[order[currentIndex]].pin, LOW);
 }
 
+bool ServoController::advanceIndex() {
+  currentIndex++;
+  if (currentIndex >= servoCount) {
+    currentIndex = 0;
+    return false;
+  }
+  return true;
+}
+
+ServoChannel ServoController::getServoChannelAt(uint8_t index) {
+  if (index < servoCount) {
+    return servos[order[index]];
+  }
+  return {0, 0};
+}
+
 // Timer1 interrupt service routine for starting the pulse
 ISR(TIMER1_COMPA_vect) {
   if (servoController.servoCount <= 0)
@@ -117,16 +137,23 @@ ISR(TIMER1_COMPA_vect) {
   
   servoController.currentIndex = 0;
   OCR1B = TCNT1 + (servoController.servos[servoController.order[0]].pulseWidth * 2);
+  TIMSK1 |= (1 << OCIE1B); // Enable COMPB interrupt
 }
 
 // Timer1 interrupt service routine for ending the pulse
 ISR(TIMER1_COMPB_vect) {
-  servoController.setCurrentPinLow();
-  servoController.currentIndex++;
+  uint16_t currentPulse = servoController.getServoChannelAt(servoController.currentIndex).pulseWidth;
 
-  while (servoController.currentIndex < servoController.servoCount && )
-
-  //set ocr1b for next pin
-  uint16_t timeDiff = servos[_order[_currentIndex + 1]].pulseWidth - servos[_order[_currentIndex]].pulseWidth;
+  // Set the next pin to low aswell if the pulse width is the same
+  while (servoController.getServoChannelAt(servoController.currentIndex).pulseWidth == currentPulse) {
+    servoController.setCurrentPinLow();
+    if(!servoController.advanceIndex()) {
+      TIMSK1 &= ~(1 << OCIE1B);
+      return; 
+    }
+  }
+  
+  // scedule next pulse end
+  uint16_t timeToNextPulseEnd = servoController.getServoChannelAt(servoController.currentIndex).pulseWidth - currentPulse;
+  OCR1B = TCNT1 + (timeToNextPulseEnd * 2);
 }
-
