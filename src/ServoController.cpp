@@ -1,37 +1,36 @@
 
 #include "ServoController.h"
-#include <Arduino.h>
 
 // Define global instance of ServoController
 ServoController servoController;
 
-ServoController::ServoController() : servoCount(0), currentIndex(0) {
-  //Configure timer1:
+ServoController::ServoController() : servoCount(0), currentIndex(0) {}
 
+void ServoController::start() {
   cli(); // disable interrupts while setting up
 
   // Reset Timer1 control registers
   TCCR1A = 0;
   TCCR1B = 0;
-
+  
   // Set to CTC mode (Clear Timer on Compare Match)
   TCCR1B |= (1 << WGM12);
-
+  
   // Prescaler 8 → 0.5 µs per tick
   TCCR1B |= (1 << CS11);
-
+  
   // OCR1A = 40000 ticks → 20 ms
   OCR1A = 40000;
 
-  sei(); // enable global interrupts
-}
-
-void ServoController::start() {
   TIMSK1 |= (1 << OCIE1A); // start pulse
+  TIMSK1 |= (1 << OCIE1B); //en/disabling this everytime in the isr's didnt work properly ..
+
+  sei(); // enable interrupts
 }
 
 void ServoController::stop() {
   TIMSK1 &= ~(1 << OCIE1A); // stop pulse
+  TIMSK1 &= ~(1 << OCIE1B); // stop pulse
 }
 
 void ServoController::reorder() {
@@ -50,7 +49,7 @@ void ServoController::reorder() {
   }
 }
 
-bool ServoController::attach(uint8_t pin, uint16_t pulseWidth = 1500) {
+bool ServoController::attach(uint8_t pin, uint16_t pulseWidth) {
   if (servoCount >= MAX_SERVOS)
     return false;
 
@@ -137,7 +136,6 @@ ISR(TIMER1_COMPA_vect) {
   
   servoController.currentIndex = 0;
   OCR1B = TCNT1 + (servoController.servos[servoController.order[0]].pulseWidth * 2);
-  TIMSK1 |= (1 << OCIE1B); // Enable COMPB interrupt
 }
 
 // Timer1 interrupt service routine for ending the pulse
@@ -148,7 +146,7 @@ ISR(TIMER1_COMPB_vect) {
   while (servoController.getServoChannelAt(servoController.currentIndex).pulseWidth == currentPulse) {
     servoController.setCurrentPinLow();
     if(!servoController.advanceIndex()) {
-      TIMSK1 &= ~(1 << OCIE1B);
+       digitalWrite(LED_BUILTIN, LOW);
       return; 
     }
   }

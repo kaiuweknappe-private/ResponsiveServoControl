@@ -1,6 +1,8 @@
 
 #ifndef ServoController_h
 #define ServoController_h
+#include <stdint.h>
+#include <Arduino.h>
 
 struct ServoChannel{
     uint8_t pin;
@@ -10,8 +12,9 @@ struct ServoChannel{
 class ServoController{
     public:
     static const uint8_t MAX_SERVOS = 8;
-    static const uint16_t MIN_PULSE_WIDTH = 500; // 0.5 ms
-    static const uint16_t MAX_PULSE_WIDTH = 2500; // 2.5 ms
+    //Todo: Finding the right pulse width for a servo can be tricky, manufacturer sad 1000 - 2000 us but that was only like 70 isch degrees.. 
+    static const uint16_t MIN_PULSE_WIDTH = 500;
+    static const uint16_t MAX_PULSE_WIDTH = 2500; 
     
     ServoController();
     void start();
