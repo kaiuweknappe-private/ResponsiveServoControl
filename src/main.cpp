@@ -4,6 +4,7 @@
 
 void setup() {
   servoController.attach(9);
+  servoController.attach(10);
   servoController.start();
   
 }
@@ -16,8 +17,10 @@ void loop() {
   //sweep();
   
   servoController.write(9, 0);
+  servoController.write(10, 0);
   delay(1000);
   servoController.write(9, 180);
+  servoController.write(10, 180);
   delay(1000);
   
 }

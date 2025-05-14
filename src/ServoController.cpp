@@ -57,9 +57,9 @@ bool ServoController::attach(uint8_t pin, uint16_t pulseWidth) {
   pinMode(pin, OUTPUT);
   digitalWrite(pin, LOW);
 
+  servoCount++;
   reorder();
 
-  servoCount++;
   return true;
 }
 
@@ -131,7 +131,7 @@ ServoChannel ServoController::getServoChannelAt(uint8_t index) {
 ISR(TIMER1_COMPA_vect) {
   if (servoController.servoCount <= 0)
     return;
-
+  digitalWrite(LED_BUILTIN, HIGH);
   servoController.setAllHigh();
   
   servoController.currentIndex = 0;
@@ -141,12 +141,12 @@ ISR(TIMER1_COMPA_vect) {
 // Timer1 interrupt service routine for ending the pulse
 ISR(TIMER1_COMPB_vect) {
   uint16_t currentPulse = servoController.getServoChannelAt(servoController.currentIndex).pulseWidth;
+  digitalWrite(LED_BUILTIN, LOW);
 
   // Set the next pin to low aswell if the pulse width is the same
   while (servoController.getServoChannelAt(servoController.currentIndex).pulseWidth == currentPulse) {
     servoController.setCurrentPinLow();
     if(!servoController.advanceIndex()) {
-       digitalWrite(LED_BUILTIN, LOW);
       return; 
     }
   }
