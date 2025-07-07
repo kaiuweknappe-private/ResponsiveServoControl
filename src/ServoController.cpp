@@ -4,7 +4,7 @@
 // Define global instance of ServoController
 ServoController servoController;
 
-ServoController::ServoController() : servoCount(0), currentIndex(0) {}
+ServoController::ServoController() : servoCount(0), currentIndex(0) { cli(); }
 
 void ServoController::start() {
   cli(); // disable interrupts while setting up
@@ -29,11 +29,13 @@ void ServoController::start() {
 }
 
 void ServoController::stop() {
+  cli(); 
   TIMSK1 &= ~(1 << OCIE1A); // stop pulse
   TIMSK1 &= ~(1 << OCIE1B); // stop pulse
 }
 
 void ServoController::reorder() {
+  cli();
   for (uint8_t i = 0; i < servoCount; i++) {
     order[i] = i;
   }
@@ -47,6 +49,7 @@ void ServoController::reorder() {
       }
     }
   }
+  sei();
 }
 
 bool ServoController::attach(uint8_t pin, uint16_t pulseWidth) {
@@ -54,16 +57,18 @@ bool ServoController::attach(uint8_t pin, uint16_t pulseWidth) {
     return false;
 
   servos[servoCount] = {pin, pulseWidth};
+  servoCount++;
+
   pinMode(pin, OUTPUT);
   digitalWrite(pin, LOW);
 
-  servoCount++;
   reorder();
 
   return true;
 }
 
 bool ServoController::detach(uint8_t pin) {
+  cli();
   for (uint8_t i = 0; i < servoCount; i++) {
     if (servos[i].pin == pin) {
       // Shift servos down
@@ -73,9 +78,11 @@ bool ServoController::detach(uint8_t pin) {
       }
       servoCount--;
       reorder();
+      sei();
       return true;
     }
   }
+  sei();
   return false;
 }
 
@@ -131,22 +138,23 @@ ServoChannel ServoController::getServoChannelAt(uint8_t index) {
 ISR(TIMER1_COMPA_vect) {
   if (servoController.servoCount <= 0)
     return;
-  digitalWrite(LED_BUILTIN, HIGH);
+
+  //digitalWrite(LED_BUILTIN, HIGH);
   servoController.setAllHigh();
   
   servoController.currentIndex = 0;
-  OCR1B = TCNT1 + (servoController.servos[servoController.order[0]].pulseWidth * 2);
+  OCR1B = TCNT1 + (servoController.getServoChannelAt(servoController.currentIndex).pulseWidth * 2);
 }
 
 // Timer1 interrupt service routine for ending the pulse
 ISR(TIMER1_COMPB_vect) {
   uint16_t currentPulse = servoController.getServoChannelAt(servoController.currentIndex).pulseWidth;
-  digitalWrite(LED_BUILTIN, LOW);
-
+  
   // Set the next pin to low aswell if the pulse width is the same
   while (servoController.getServoChannelAt(servoController.currentIndex).pulseWidth == currentPulse) {
     servoController.setCurrentPinLow();
     if(!servoController.advanceIndex()) {
+      //digitalWrite(LED_BUILTIN, LOW);
       return; 
     }
   }
