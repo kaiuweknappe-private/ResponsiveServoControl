@@ -1,10 +1,11 @@
-#include <Arduino.h>
-#include "ServoController.h"
+
+#include "ServoControllerESP32.h"
 
 
 void setup() {
-  servoController.attach(9);
-  servoController.attach(10);
+  servoController.attach(5);
+  servoController.attach(18);
+  servoController.attach(19);
   servoController.start();
   
 }
