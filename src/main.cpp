@@ -1,39 +1,38 @@
 #include <Arduino.h>
 #include "ServoController.h"
 
-
 void setup() {
-  servoController.attach(9);
-  servoController.attach(10);
-  servoController.start();
+
+  // HIER DARF KEIN DELAY SEIN
   
+  servoController.attach(8, 1500); // funktioniert nur mit non pwm pins for some reason 
+  //delay(40); MUSS AUCH NICHT SEIEN ANSCHEINEEND 
+  servoController.start();
+
+  while (1);
+  //delay(3000); // ob man das brauch weiß ich nicht, aber ja.. 
 }
 
-void sweep();
-uint16_t position = 0;
-int direction = 1;
+// void sweep();
+// uint16_t position = 0;
+// int direction = 1;
 
 void loop() {
   //sweep();
   
-  servoController.write(9, 0);
-  servoController.write(10, 0);
-  delay(1000);
-  servoController.write(9, 180);
-  servoController.write(10, 180);
-  delay(1000);
+  
   
 }
 
 
-void sweep() {
-  servoController.write(9, position);
+// void sweep() {
+//   servoController.write(9, position);
 
-  position += direction;
+//   position += direction;
 
-  if (position >= 180 || position <= 0) {
-    direction = -direction;
-  }
+//   if (position >= 180 || position <= 0) {
+//     direction = -direction;
+//   }
 
-  delay(10);
-}
+//   delay(10);
+// }
